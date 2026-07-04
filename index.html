@@ -116,11 +116,9 @@
     .btn-deliver:hover { background: var(--primary-hover); }
     .btn-deliver:disabled { opacity: .6; cursor: default; }
 
-    /* View tabs */
-    #view-tabs { display: none; border-bottom: 1px solid var(--border); }
-    .view-tab { flex: 1; padding: 10px 0; border: none; border-bottom: 3px solid transparent; background: var(--surface); font-family: inherit; font-size: .85rem; font-weight: 600; cursor: pointer; color: var(--muted); transition: all .15s; }
-    .view-tab.active { color: var(--primary); border-bottom-color: var(--primary); background: var(--bg); }
-    .view-tab-badge { background: var(--primary); color: #fff; font-size: .7rem; font-weight: 700; padding: 1px 7px; border-radius: 99px; margin-left: 5px; vertical-align: middle; }
+    /* Toggle de vista */
+    #btn-toggle-view { display: none; background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.4); color: #fff; font-size: .75rem; font-weight: 700; padding: 4px 10px; border-radius: 99px; cursor: pointer; font-family: inherit; transition: background .15s; white-space: nowrap; }
+    #btn-toggle-view:hover { background: rgba(255,255,255,.35); }
 
     /* Orders bar en modo maximizado */
     #orders-bar.maximized { flex: 1; display: flex !important; flex-direction: column; overflow: hidden; }
@@ -140,6 +138,7 @@
   <h1>Cafe Diario</h1>
   <div class="header-right">
     <span id="badge"></span>
+    <button id="btn-toggle-view"></button>
     <button id="btn-reset-counter" title="Reiniciar numeración de pedidos">↩ #1</button>
     <button id="btn-refresh" title="Actualizar catálogo">↻</button>
   </div>
@@ -168,11 +167,6 @@
     <button id="btn-confirm" style="display:none">Cargar pedido</button>
     <button id="btn-clear" style="display:none">Limpiar selección</button>
   </aside>
-</div>
-
-<div id="view-tabs">
-  <button class="view-tab active" data-view="nuevo">Nuevo</button>
-  <button class="view-tab" data-view="pedidos">Pedidos <span id="view-tab-badge" class="view-tab-badge"></span></button>
 </div>
 
 <section id="orders-bar" style="display:none">
@@ -320,15 +314,12 @@
     const hasOrders = orders.length > 0;
     if (!hasOrders) viewMode = 'nuevo';
 
-    const viewTabs = document.getElementById('view-tabs');
     const layout = document.querySelector('.layout');
     const ordersBar = document.getElementById('orders-bar');
+    const btn = document.getElementById('btn-toggle-view');
 
-    viewTabs.style.display = hasOrders ? 'flex' : 'none';
-    document.querySelectorAll('.view-tab').forEach(t =>
-      t.classList.toggle('active', t.dataset.view === viewMode)
-    );
-    document.getElementById('view-tab-badge').textContent = orders.length;
+    btn.style.display = hasOrders ? 'inline-block' : 'none';
+    btn.textContent = viewMode === 'nuevo' ? `Pedidos ${orders.length}` : '← Nuevo';
 
     if (!hasOrders || viewMode === 'nuevo') {
       layout.style.display = '';
@@ -472,10 +463,8 @@
     }
   });
 
-  document.getElementById('view-tabs').addEventListener('click', e => {
-    const tab = e.target.closest('.view-tab');
-    if (!tab) return;
-    viewMode = tab.dataset.view;
+  document.getElementById('btn-toggle-view').addEventListener('click', () => {
+    viewMode = viewMode === 'nuevo' ? 'pedidos' : 'nuevo';
     applyViewMode();
   });
 
