@@ -116,6 +116,17 @@
     .btn-deliver:hover { background: var(--primary-hover); }
     .btn-deliver:disabled { opacity: .6; cursor: default; }
 
+    /* View tabs */
+    #view-tabs { display: none; border-bottom: 1px solid var(--border); }
+    .view-tab { flex: 1; padding: 10px 0; border: none; border-bottom: 3px solid transparent; background: var(--surface); font-family: inherit; font-size: .85rem; font-weight: 600; cursor: pointer; color: var(--muted); transition: all .15s; }
+    .view-tab.active { color: var(--primary); border-bottom-color: var(--primary); background: var(--bg); }
+    .view-tab-badge { background: var(--primary); color: #fff; font-size: .7rem; font-weight: 700; padding: 1px 7px; border-radius: 99px; margin-left: 5px; vertical-align: middle; }
+
+    /* Orders bar en modo maximizado */
+    #orders-bar.maximized { flex: 1; display: flex !important; flex-direction: column; overflow: hidden; }
+    #orders-bar.maximized #orders-list { flex: 1; flex-direction: column; overflow-y: auto; overflow-x: hidden; }
+    #orders-bar.maximized .ticket { min-width: unset; max-width: unset; }
+
     /* Toast */
     #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 10px; color: #fff; font-size: .9rem; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,.2); opacity: 0; transition: opacity .3s; pointer-events: none; white-space: nowrap; }
     #toast.show { opacity: 1; }
@@ -159,6 +170,11 @@
   </aside>
 </div>
 
+<div id="view-tabs">
+  <button class="view-tab active" data-view="nuevo">Nuevo</button>
+  <button class="view-tab" data-view="pedidos">Pedidos <span id="view-tab-badge" class="view-tab-badge"></span></button>
+</div>
+
 <section id="orders-bar" style="display:none">
   <div class="orders-header">
     <span class="orders-label">Pedidos en curso</span>
@@ -178,6 +194,7 @@
   let selectedCategory = null;
   let orders = [];
   let orderCounter = 1;
+  let viewMode = 'nuevo'; // 'nuevo' | 'pedidos'
 
   // ── Apps Script calls ─────────────────────────────────────────────────────
 
@@ -297,13 +314,37 @@
 
   function render() { renderGrid(); renderCart(); }
 
+  // ── View mode ─────────────────────────────────────────────────────────────
+
+  function applyViewMode() {
+    const hasOrders = orders.length > 0;
+    if (!hasOrders) viewMode = 'nuevo';
+
+    const viewTabs = document.getElementById('view-tabs');
+    const layout = document.querySelector('.layout');
+    const ordersBar = document.getElementById('orders-bar');
+
+    viewTabs.style.display = hasOrders ? 'flex' : 'none';
+    document.querySelectorAll('.view-tab').forEach(t =>
+      t.classList.toggle('active', t.dataset.view === viewMode)
+    );
+    document.getElementById('view-tab-badge').textContent = orders.length;
+
+    if (!hasOrders || viewMode === 'nuevo') {
+      layout.style.display = '';
+      ordersBar.classList.remove('maximized');
+      ordersBar.style.display = hasOrders ? 'block' : 'none';
+    } else {
+      layout.style.display = 'none';
+      ordersBar.classList.add('maximized');
+    }
+  }
+
   // ── Orders ────────────────────────────────────────────────────────────────
 
   function renderOrders() {
-    const bar = document.getElementById('orders-bar');
     const list = document.getElementById('orders-list');
     const badge = document.getElementById('orders-count-badge');
-    bar.style.display = orders.length > 0 ? 'block' : 'none';
     badge.textContent = orders.length;
     list.innerHTML = orders.map(o => `
       <div class="ticket" data-order="${o.id}">
@@ -329,6 +370,7 @@
           </div>
         </div>
       </div>`).join('');
+    applyViewMode();
   }
 
   async function deliverOrder(id) {
@@ -428,6 +470,13 @@
       renderOrders();
       showToast(`Pedido #${id} cancelado`, false);
     }
+  });
+
+  document.getElementById('view-tabs').addEventListener('click', e => {
+    const tab = e.target.closest('.view-tab');
+    if (!tab) return;
+    viewMode = tab.dataset.view;
+    applyViewMode();
   });
 
   // ── Toast ─────────────────────────────────────────────────────────────────
